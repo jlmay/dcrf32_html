@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D8&T10读卡器功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 25px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: stretch;
+            height: 100vh; 
+        }
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            height: 100%;
+        }
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: stretch;
+            height: 100%;
+            max-height: 100%;
+            overflow-y: auto; /* 允许滚动 */
+        }
+        .module {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex: 1 1 calc(33.333% - 40px);
+            border: 1px solid #ddd; /* 新增灰色边框 */
+            box-sizing: border-box;  /* 包括 padding 和 border 在内的总宽度 */
+        }
+        .module h2 {
+            margin-top: 0;
+            color: #555;
+            box-sizing: border-box;  /* 包括 padding 和 border 在内的总宽度 */
+            font-size: 18px; /* 新增字体大小设置，原默认大小约为20px */
+        }
+        .module h3 {
+            color: #666;
+            margin-top: 10px;
+            font-size: 15px;
+        }        
+        button {
+            display: inline-block;
+            width: auto;
+            padding: 8px 16px;
+            margin: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;  /* 包括 padding 和 border 在内的总宽度 */
+        }
+        .output {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: 100%; /* 确保输出框的高度与右侧面板一致 */
+            overflow-y: auto; /* 超出部分可滚动 */
+        }
+        .output textarea {
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>D8 T10 T60 读卡器功能测试</h1>
+    <div class="container">
+        <div class="left-panel">
+            <div class="module">
+                <h2>设备功能</h2>
+                <button id="id_dc_init">打开端口</button>
+                <button id="id_dc_exit">关闭端口</button>
+                <button id="id_dc_getver">读固件版本</button>
+                <button id="id_dc_beep">蜂鸣</button>
+                <button id="id_dc_reset">关闭射频</button>
+                <button id="id1_dc_reset">射频复位</button>
+            </div>
+            <div class="module">
+                <h2>M1卡操作</h2>
+                <button id="id_dc_card_n">寻卡</button>
+                <button id="id_dc_authentication_pass">校验密码</button>
+                <button id="id_dc_read">读卡</button>
+                <button id="id_dc_write">写卡</button>
+                <button id="id_change_key">改写密码</button>
+                <button id="id_dc_halt">停止卡</button>
+            </div>
+            <div class="module">
+                <h2>非接触 CPU卡操作</h2>
+                <button id="id_dc_config_card">设置卡型</button>
+                <button id="id1_dc_card_n">TYPEA寻卡</button>
+                <button id="id_dc_card_b">TYPEB寻卡</button>
+                <button id="id_dc_pro_resetInt">TYPEA卡片复位</button>
+                <button id="id_dc_pro_commandlinkInt">发送APDU命令</button>
+            </div>
+            
+            <!-- 新增的Ultralight卡/NTAG卡操作模块 -->
+            <div class="module">
+                <h2>Ultralight卡/NTAG卡操作</h2>
+                <button id="id2_dc_card_n">寻卡</button>
+                <button id="id_dc_getcard_version">卡版本</button>
+                <button id="id1_dc_read">读卡</button>
+                <button id="id_dc_read2">读卡2</button>
+                <button id="id_dc_fast_read">快速读卡</button>
+                <button id="id1_dc_write">写卡</button>
+                <button id="id_dc_write2">写卡2</button>
+                <button id="id_dc_pwd_auth">口令验证</button>
+                
+                <h3>Ultralight C卡/Ultralight AES卡 函数</h3>
+                <button id="id_dc_auth_ulc">验证ULC卡密码</button>
+                <button id="id_dc_changekey_ulc">修改ULC卡密码</button>
+                <button id="id_dc_auth_aes">验证AES卡密码</button>
+                <button id="id_dc_changekey_aes">修改AES卡密码</button>
+            </div>
+        </div>
+        <div class="right-panel">
+            <!-- 修改参数输入框布局 -->
+            <div class="input-group" style="display: flex; align-items: center; gap: 10px;">
+                <label style="margin-bottom: 0;">参数一</label>
+                <input type="text" id="id_input_param1" style="flex: 1;">
+            </div>
+            <div class="input-group" style="display: flex; align-items: center; gap: 10px;">
+                <label style="margin-bottom: 0;">参数二</label>
+                <input type="text" id="id_input_param2" style="flex: 1;">
+            </div>
+            
+            <!-- 列表框保持不变 -->
+            <div class="output">
+                <label>返回信息</label>
+                <textarea readonly></textarea>
+            </div>
+        </div>
+    </div>
+    <script src="dcrf32_client.js"></script>
+    <script>
+        const outputTextarea = document.querySelector('.output textarea');
+        function appendToOutput(message) {
+        outputTextarea.value += message + '\n'; // 追加信息并换行
+        outputTextarea.scrollTop = outputTextarea.scrollHeight; // 滚动到底部
+        }    
+ 
+       // 获取参数一输入框
+       const param1Input = document.getElementById('id_input_param1');
+       const param2Input = document.getElementById('id_input_param2'); 
+       const param3Input = document.getElementById('id_input_param3');      
+ 
+        let handle = null;  
+        // 打开端口
+        document.getElementById('id_dc_init').addEventListener('click', async () => {
+            if (handle) {
+                appendToOutput('请先关闭设备。');
+                return;
+            }
+            const isConnected = await openWs('ws://127.0.0.1:50150', 5000);
+            if (!isConnected) {
+                appendToOutput('无法连接到 WebSocket 服务器');
+                return;
+            }
+
+            result = await dc_init(100, 115200);
+            if ((typeof (result) === 'undefined') || (result[0] < 0)) {
+                appendToOutput('连接设备失败,返回结果:'+ result[0]+'，请检查设备是否连接正常。')
+                return ;
+           }
+           appendToOutput('dc_init成功 返回结果:'+ result[0]);
+           handle = result[0];
+           return;
+        });
+        // 关闭端口
+        document.getElementById('id_dc_exit').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }            
+            result = await dc_exit(handle);
+            if ((typeof (result) === 'undefined') || (result[0] != 0)) {
+                appendToOutput('dc_exit失败 返回结果:'+ result[0]);
+            }
+         
+            appendToOutput('dc_exit成功 返回结果:'+ result[0]);
+            handle = null;
+            await closeWs();
+            return
+        });
+        //读设备固件版本号
+        document.getElementById('id_dc_getver').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }            
+            result = await dc_getver(handle);
+            if ((typeof (result) === 'undefined') || (result[0] != 0)) {
+                appendToOutput('dc_getver失败 返回结果:'+ result[0]);
+            }
+            appendToOutput('dc_getver成功 版本号:'+ result[1]);
+            return;
+        });
+        // 蜂鸣按钮点击事件
+        document.getElementById('id_dc_beep').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            result = await dc_beep(handle, 1000); // 蜂鸣时长，单位毫秒
+            if ((typeof (result) === 'undefined') || (result[0] != 0)) {
+                appendToOutput('dc_beep失败 返回结果:'+ result[0]);
+            } 
+            appendToOutput('dc_beep成功 返回结果:'+ result[0]);
+            return;
+        });
+        //关闭射频按钮点击事件
+        document.getElementById('id_dc_reset').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            result = await dc_reset(handle, 0); // 0:关闭射频
+            if ((typeof (result) === 'undefined') || (result[0] != 0)) {
+                appendToOutput('dc_reset关闭射频失败 返回结果:'+ result[0]);
+            }
+            appendToOutput('dc_reset关闭射频成功 返回结果:'+ result[0]);
+            return
+        })
+        //射频复位按钮点击事件
+        document.getElementById('id1_dc_reset').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            result = await dc_reset(handle, 1);
+            if ((typeof (result) === 'undefined') || (result[0] != 0)) {
+                appendToOutput('dc_reset射频复位失败 返回结果:'+ result[0]);
+            }
+            appendToOutput('dc_reset射频复位成功 返回结果:'+ result[0]);
+            return;
+        });
+        //M1卡寻卡按钮点击事件
+        document.getElementById('id_dc_card_n').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+
+            result = await dc_card_n(handle,0);
+            if ((typeof (result) === 'undefined') || ((result[0] != 0) && (result[0] != 1))) {
+                appendToOutput('dc_card_n 寻卡失败 返回结果:'+ result[0]);
+                return
+            }
+            if(result[0] == 1) {
+                appendToOutput('dc_card_n 返回无卡 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_card_n 寻卡成功 卡序列号:'+ result[2]);
+            return;
+        });
+        //M1卡校验密码按钮点击事件 本例子默认校验A密码
+        document.getElementById('id_dc_authentication_pass').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const sector_value = param1Input.value.trim(); // 获取输入值并去除前后空格
+            // 判断是否为10进制数值
+            if (!/^\d+$/.test(sector_value)) {
+                appendToOutput('参数一扇区号必须输入一个有效的10进制数值！');
+                return; 
+            }
+            const pass_value = param2Input.value.trim(); // 获取输入值并去除前后空格
+            // 验证长度和字符范围
+            if (!/^[0-9a-fA-F]{12}$/.test(pass_value)) {
+                appendToOutput('参数二密码必须输入12个字符，且字符必须是0-9、a-f或A-F之间的16进制字符！');
+                return; // 停止后续操作
+            }    
+            result = await dc_authentication_pass(handle,0,sector_value,pass_value); //0 表示校验A密码
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_authentication_pass 校验密码失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_authentication_pass 校验密码成功 返回结果:'+ result[0]);
+            return; 
+        })
+        //M1卡读块按钮点击事件
+        document.getElementById('id_dc_read').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const block_value = param1Input.value.trim();
+            if (!/^\d+$/.test(block_value)) {
+                appendToOutput('参数一块号必须输入一个有效的10进制数值！');
+                return; 
+            }
+            result = await dc_read(handle,block_value);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_read 读块失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_read 读块成功 返回结果:'+ result[0]+' 数据:'+ result[1]);
+            return;
+        });
+        //M1卡写块按钮点击事件
+        document.getElementById('id_dc_write').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const block_value = param1Input.value.trim();
+            if (!/^\d+$/.test(block_value)) {
+                appendToOutput('参数一块号必须输入一个有效的10进制数值！');
+                return; 
+            }
+            const data_value = param2Input.value.trim();
+            if (!/^[0-9a-fA-F]{32}$/.test(data_value)) {
+                appendToOutput('参数二数据必须输入32个字符，且字符必须是0-9、a-f或A-F之间的16进制字符！');
+                return; // 停止后续操作
+            }
+            result = await dc_write(handle,block_value,data_value);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_write 写块失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_write 写块成功 返回结果:'+ result[0]);
+            return;
+        });
+        //M1卡改写密码按钮点击事件，本例子只改写扇区的A密码，控制字节保持为FF078069,B密码保持为FFFFFFFF
+        document.getElementById('id_change_key').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const sector_value = param1Input.value.trim();
+            if (!/^\d+$/.test(sector_value)) {
+                appendToOutput('参数一扇区号必须输入一个有效的10进制数值！');
+                return; 
+            }
+            if (sector_value > 15) {
+                appendToOutput('参数一扇区号必须小于15！');
+                return; 
+            }
+            pass_addr = sector_value * 4 + 3; // 扇区密码地址为扇区号*4+3
+
+            const keyA_value = param2Input.value.trim(); // 获取输入值并去除前后空格
+            // 验证长度和字符范围
+            if (!/^[0-9a-fA-F]{12}$/.test(keyA_value)) {
+                appendToOutput('参数二密码必须输入12个字符，且字符必须是0-9、a-f或A-F之间的16进制字符！');
+                return; // 停止后续操作
+            }    
+            pass_value = keyA_value + 'FF078069'+ 'FFFFFFFF';  // A密码为输入的12位字符，控制字节为FF078069，B密码为FFFFFFFFFF 返回结果:'+ result[0]);
+            return;             
+        });
+        //M1卡停止卡按钮点击事件
+        document.getElementById('id_dc_halt').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            result = await dc_halt(handle);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_halt 停止卡失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_halt 停止卡成功 返回结果:'+ result[0]);
+            return;
+        });
+        //非接触CPU卡设置卡型
+        document.getElementById('id_dc_config_card').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const card_type = param1Input.value.trim().toUpperCase();
+            // 验证是否为 A 或 B
+            if (card_type !== 'A' && card_type !== 'B') {
+                appendToOutput('参数一卡类型必须输入 A 或 B！');
+                return; // 停止后续操作
+            }
+
+            result = await dc_config_card(handle,card_type.charCodeAt(0));  //注意这里卡片类型为字符A或B对应的ASCII码
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_config_card 设置卡类型失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_config_card 设置卡类型为'+card_type+'成功 返回结果:'+ result[0]);
+            return
+        });
+        //非接触CPU TypeA卡寻卡按钮点击事件
+        document.getElementById('id1_dc_card_n').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            result = await dc_card_n(handle,0);
+            if ((typeof (result) === 'undefined') || ((result[0] != 0) && (result[0] != 1))) {
+                appendToOutput('dc_card_n 寻卡失败 返回结果:'+ result[0]);
+                return
+            }
+            if(result[0] == 1) {
+                appendToOutput('dc_card_n 返回无卡 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_card_n 寻卡成功 卡序列号:'+ result[2]);
+            return;
+        });
+        //非接触CPU TypeB卡寻卡按钮点击事件
+        document.getElementById('id_dc_card_b').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            result = await dc_card_b(handle);
+            if ((typeof (result) === 'undefined') || ((result[0] != 0) && (result[0] != 1))) {
+                appendToOutput('dc_card_b 寻卡失败 返回结果:'+ result[0]);
+                return
+            }
+            if(result[0] == 1) {
+                appendToOutput('dc_card_b 返回无卡 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_card_b 寻卡成功 卡返回信息:'+ result[1]);
+            return;
+        });
+        //非接触CPU TYPEA卡复位按钮点击事件
+        document.getElementById('id_dc_pro_resetInt').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            result = await dc_pro_resetInt(handle);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_pro_resetInt 复位失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_pro_resetInt 复位成功 返回结果:'+ result[2]);
+            return;
+        });
+        //非接触CPU卡发送APDU命令按钮点击事件
+        document.getElementById('id_dc_pro_commandlinkInt').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const apdu_value = param1Input.value.trim();
+            if (!/^[0-9a-fA-F]+$/.test(apdu_value)) {
+                appendToOutput('参数一APDU命令字符必须是0-9、a-f或A-F之间的16进制字符！');
+                return; // 停止后续操作
+            }    
+            const slen = apdu_value.length;
+            if (slen % 2 != 0) {
+                appendToOutput('参数一APDU命令字符必须是偶数个！');
+                return; // 停止后续操作
+            }
+            result = await dc_pro_commandlinkInt(handle, slen, apdu_value, 7);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_pro_commandlinkInt 发送APDU命令失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_pro_commandlinkInt 发送APDU命令成功 返回结果:'+ result[2]);
+            return;
+        });
+        //Ultralight卡/NTAG卡 寻卡按钮点击事件
+        document.getElementById('id2_dc_card_n').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+          }
+          result = await dc_card_n(handle,1);
+          if ((typeof (result) === 'undefined') || ((result[0]!= 0) && (result[0]!= 1))) {
+              appendToOutput('dc_card_n 寻卡失败 返回结果:'+ result[0]);
+              return
+          }
+          if(result[0] == 1) {
+              appendToOutput('dc_card_n 返回无卡 返回结果:'+ result[0]);
+              return;
+          }
+          appendToOutput('dc_card_n 寻卡成功 卡序列号:'+ result[2]);
+          return;
+        });
+        //Ultralight卡/NTAG卡 读卡点击事件
+        document.getElementById('id1_dc_read').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const block_value = param1Input.value.trim();
+            if (!/^\d+$/.test(block_value)) {
+                appendToOutput('参数一块号必须输入一个有效的10进制数值！');
+                return; 
+            }
+            result = await dc_read(handle,block_value);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_read 读块失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_read 读块成功 返回结果:'+ result[0]+' 数据:'+ result[1]);
+            return;
+        });
+        //Ultralight卡/NTAG卡 读卡2点击事件
+        document.getElementById('id_dc_read2').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const block_value = param1Input.value.trim();
+            if (!/^\d+$/.test(block_value)) {
+                appendToOutput('参数一块号必须输入一个有效的10进制数值！');
+                return; 
+            }
+            result = await dc_read2(handle,0xff,4,block_value); //0xff,4 固定数据
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_read2 读卡失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_read2 读卡成功 返回结果:'+ result[0]+' 数据:'+ result[1]);
+            return;
+        });
+        //Ultralight卡/NTAG卡 写卡点击事件
+        document.getElementById('id1_dc_write').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const block_value = param1Input.value.trim();
+            if (!/^\d+$/.test(block_value)) {
+                appendToOutput('参数一块号必须输入一个有效的10进制数值！');
+                return; 
+            }
+            const data_value = param2Input.value.trim();
+            if (!/^[0-9a-fA-F]{32}$/.test(data_value)) {
+                appendToOutput('参数二数据必须输入32个16进制字符，仅前8个字符有效！');
+                return; // 停止后续操作
+            }
+            result = await dc_write(handle,block_value,data_value);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_write 写块失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_write 写块成功 返回结果:'+ result[0]);
+            return;
+        });   
+        //Ultralight卡/NTAG卡 写卡2点击事件
+        document.getElementById('id_dc_write2').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const block_value = param1Input.value.trim();
+            if (!/^\d+$/.test(block_value)) {
+                appendToOutput('参数一块号必须输入一个有效的10进制数值！');
+                return; 
+            }
+            const data_value = param2Input.value.trim();
+            if (!/^[0-9a-fA-F]{8}$/.test(data_value)) {
+                appendToOutput('参数二数据必须输入8个字符，且字符必须是0-9、a-f或A-F之间的16进制字符！');
+                return; // 停止后续操作
+            }
+            result = await dc_write2(handle,0xff,4,block_value,data_value); //0xff,4 固定数据
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_write2 写块失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_write2 写块成功 返回结果:'+ result[0]);
+            return;
+        });                
+   
+    </script>   
+</body>
+</html>
