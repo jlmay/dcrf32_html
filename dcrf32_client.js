@@ -4776,3 +4776,158 @@ async function dc_halt( icdev)
 
   return result	
 }
+
+async function dc_getcard_version(icdev, flag) {
+  let result = new Array();
+  let inStr, outStr;
+  let obj;
+
+  // 构造输入字符串
+  inStr = '{"func":"dc_getcard_version","in":["' + icdev.toString() + '","' + flag.toString() + '"]}';
+
+  // 调用底层 API
+  outStr = await callDcrf32(inStr, 10000);
+  if (typeof (outStr) === 'undefined') {
+    return;
+  }
+
+  try {
+    // 解析返回的 JSON 字符串
+    obj = JSON.parse(outStr);
+  } catch (error) {
+    return;
+  }
+
+  // 将结果存储在数组中
+  result[0] = parseInt(obj.result); // 返回的状态码
+  if (result[0] === 0) {
+    result[1] = parseInt(obj.out[0]); // rlen
+    result[2] = obj.out[1]; // rdata
+  }
+
+  return result;
+}
+async function dc_analyze_version(flag, index, version_data_len, version_data) {
+  let result = new Array();
+  let inStr, outStr;
+  let obj;
+
+  // 构造输入字符串
+  inStr = '{"func":"dc_analyze_version","in":[' +
+    '"' + flag.toString() + '",' +
+    '"' + index.toString() + '",' +
+    '"' + version_data_len.toString() + '",' +
+    '"' + version_data + '"]}';
+
+  // 调用底层 API
+  outStr = await callDcrf32(inStr, 10000);
+  if (typeof (outStr) === 'undefined') {
+    return;
+  }
+
+  try {
+    // 解析返回的 JSON 字符串
+    obj = JSON.parse(outStr);
+  } catch (error) {
+    return;
+  }
+
+  // 将结果存储在数组中
+  result[0] = parseInt(obj.result); // 返回的状态码
+  if (result[0] === 0) {
+    result[1] = obj.out[0]; // version_exp
+  }
+
+  return result;
+}
+async function dc_fast_read(icdev, flag, start_addr, end_addr) {
+  let result = new Array(); // 用于存储返回结果
+  let inStr, outStr;
+  let obj;
+
+  // 构造输入字符串
+  inStr = JSON.stringify({
+      func: "dc_fast_read",
+      in: [icdev.toString(), flag.toString(), start_addr.toString(), end_addr.toString()]
+  });
+
+  // 调用底层 API
+  outStr = await callDcrf32(inStr, 10000); // 假设超时时间为 10000 毫秒
+  if (typeof (outStr) === 'undefined') {
+      return; // 如果返回未定义，直接返回
+  }
+
+  try {
+      // 解析返回的 JSON 字符串
+      obj = JSON.parse(outStr);
+  } catch (error) {
+      return; // 如果解析失败，直接返回
+  }
+
+  // 将结果存储在数组中
+  result[0] = parseInt(obj.result); // 返回的状态码
+  if (result[0] === 0) {
+      result[1] = parseInt(obj.out[0]); // rlen
+      result[2] = obj.out[1]; // rdata
+  }
+
+  return result;
+}
+async function dc_auth_aes(icdev, flag, arg, authkey) {
+  let result = new Array(); // 用于存储返回结果
+  let inStr, outStr;
+  let obj;
+
+  // 构造输入字符串
+  inStr = JSON.stringify({
+      func: "dc_auth_aes",
+      in: [icdev.toString(), flag.toString(), arg.toString(), authkey]
+  });
+
+  // 调用底层 API
+  outStr = await callDcrf32(inStr, 10000); // 假设超时时间为 10000 毫秒
+  if (typeof (outStr) === 'undefined') {
+      return; // 如果返回未定义，直接返回
+  }
+
+  try {
+      // 解析返回的 JSON 字符串
+      obj = JSON.parse(outStr);
+  } catch (error) {
+      return; // 如果解析失败，直接返回
+  }
+
+  // 将结果存储在数组中
+  result[0] = parseInt(obj.result); // 返回的状态码
+
+  return result;
+}
+async function dc_changekey_aes(icdev, flag, arg, keylen, newkey) {
+  let result = new Array(); // 用于存储返回结果
+  let inStr, outStr;
+  let obj;
+
+  // 构造输入字符串
+  inStr = JSON.stringify({
+      func: "dc_changekey_aes",
+      in: [icdev.toString(), flag.toString(), arg.toString(), keylen.toString(), newkey]
+  });
+
+  // 调用底层 API
+  outStr = await callDcrf32(inStr, 10000); // 假设超时时间为 10000 毫秒
+  if (typeof (outStr) === 'undefined') {
+      return; // 如果返回未定义，直接返回
+  }
+
+  try {
+      // 解析返回的 JSON 字符串
+      obj = JSON.parse(outStr);
+  } catch (error) {
+      return; // 如果解析失败，直接返回
+  }
+
+  // 将结果存储在数组中
+  result[0] = parseInt(obj.result); // 返回的状态码
+
+  return result;
+}

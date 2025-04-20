@@ -761,6 +761,40 @@
           appendToOutput('dc_card_n 寻卡成功 卡序列号:'+ result[2]);
           return;
         });
+        //Ultralight卡/NTAG卡 读卡版本点击事件
+        document.getElementById('id_dc_getcard_version').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            result = await dc_getcard_version(handle,0xff);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_getcard_version 读版本失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_getcard_version 读版本成功 返回数据长度:'+ result[1]+',版本:'+ result[2]);
+            version_data_len = result[1];
+            version_data = result[2]
+            for (let index = 0; index < 8; index++) {
+               try {
+                   // 调用 dc_analyze_version 函数
+                    const resultversion = await dc_analyze_version( 0xFF, index, parseInt(version_data_len), version_data);
+                    if (resultversion && resultversion[0] === 0) {
+                        // 解析成功，输出结果
+                        const versionExp = resultversion[1]; // 获取解析后的版本信息
+                        appendToOutput(`index ${index}: ${versionExp.trim()}`);
+                    } else {
+                        // 解析失败
+                        appendToOutput(`解析 index ${index} 失败`);
+                        return; // 退出循环
+                        }
+                    } catch (error) {
+                        appendToOutput(`解析 index ${index} 时发生错误:`, error);
+                        return; // 退出循环
+                    }
+                }    
+           return;
+        });
         //Ultralight卡/NTAG卡 读卡点击事件
         document.getElementById('id1_dc_read').addEventListener('click', async () => {
             if (!handle) {
@@ -799,6 +833,30 @@
             appendToOutput('dc_read2 读卡成功 返回结果:'+ result[0]+' 数据:'+ result[1]);
             return;
         });
+        //Ultralight卡/NTAG卡 快速读卡点击事件
+        document.getElementById('id_dc_fast_read').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const start_addr = param1Input.value.trim();
+            if (!/^\d+$/.test(start_addr)) {
+                appendToOutput('参数一起始块号必须输入一个有效的10进制数值！');
+                return; 
+            }
+            const end_addr = param2Input.value.trim();
+            if (!/^\d+$/.test(end_addr)) {
+                appendToOutput('参数二结束块号必须输入一个有效的10进制数值！');
+                return; 
+            }
+            result = await dc_fast_read(handle,0xff,start_addr,end_addr);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_fast_read 读卡失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_fast_read 读卡成功 返回数据长度:'+ result[1]+' 数据:'+ result[2]);
+            return;
+        })
         //Ultralight卡/NTAG卡 写卡点击事件
         document.getElementById('id1_dc_write').addEventListener('click', async () => {
             if (!handle) {
@@ -865,7 +923,101 @@
             }
             appendToOutput('dc_pwd_auth 验证成功 返回结果:'+ result[0]);
             return;
-        })          
+        })  
+        //Ultralight C卡核验密码点击事件
+        document.getElementById('id_dc_auth_ulc').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const key_value = param1Input.value.trim();
+            if (!/^[0-9a-fA-F]{32}$/.test(key_value)) {
+                appendToOutput('参数1密钥必须输入32个字符，且字符必须是0-9、a-f或A-F之间的16进制字符！');
+                appendToOutput('下面为你填入Ultralight C卡默认密钥：49454D4B41455242214E4143554F5946');
+                param1Input.value = '49454D4B41455242214E4143554F5946';
+                return; // 停止后续操作
+            }
+            result = await dc_auth_ulc(handle,key_value);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_auth_ulc 验证失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_auth_ulc 验证成功 返回结果:'+ result[0]);
+            return;
+        })     
+        //Ultralight C卡改密钥点击事件
+        document.getElementById('id_dc_changekey_ulc').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const key_value = param1Input.value.trim();
+            if (!/^[0-9a-fA-F]{32}$/.test(key_value)) {
+                appendToOutput('参数1密钥必须输入32个字符，且字符必须是0-9、a-f或A-F之间的16进制字符！');
+                appendToOutput('下面为你填入Ultralight C卡默认密钥：49454D4B41455242214E4143554F5946');
+                param1Input.value = '49454D4B41455242214E4143554F5946';
+                return;
+            }
+            result = await dc_changekey_ulc(handle,key_value);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_changekey_ulc 写密钥失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_changekey_ulc 写密钥成功 返回结果:'+ result[0]);
+            return;
+        }) 
+        ///Ultralight AES卡验证密码点击事件
+        document.getElementById('id_dc_auth_aes').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const arg_value = param1Input.value.trim();
+            if (arg_value !== '0' && arg_value !== '1' && arg_value !== '2') {
+                appendToOutput('参数1密钥类三种：0-DataProtKey 1-UIDRetrKey 2-OriginalityKey！');
+                return; 
+            }
+            const key_value = param2Input.value.trim();
+            if (!/^[0-9a-fA-F]{32}$/.test(key_value)) {
+                appendToOutput('参数2密钥必须输入32个字符，且字符必须是0-9、a-f或A-F之间的16进制字符！');
+                appendToOutput('下面为你填入Ultralight AES卡默认密钥：00000000000000000000000000000000');
+                param2Input.value = '00000000000000000000000000000000';
+                return;
+            }
+            result = await dc_auth_aes(handle,0xff,arg_value,key_value);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_auth_aes 验证失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_auth_aes 验证成功 返回结果:'+ result[0]);
+            return;
+        })
+        //Ultralight AES卡改密钥点击事件
+        document.getElementById('id_dc_changekey_aes').addEventListener('click', async () => {
+            if (!handle) {
+                appendToOutput('请先打开端口。');
+                return;
+            }
+            const arg_value = param1Input.value.trim();
+            if (arg_value !== '0' && arg_value !== '1' && arg_value !== '2') {
+                appendToOutput('参数1密钥类三种：0-DataProtKey 1-UIDRetrKey 2-OriginalityKey！');
+                return; 
+            }
+            const key_value = param2Input.value.trim();
+            if (!/^[0-9a-fA-F]{32}$/.test(key_value)) {
+                appendToOutput('参数2密钥必须输入32个字符，且字符必须是0-9、a-f或A-F之间的16进制字符！');
+                appendToOutput('下面为你填入Ultralight AES卡默认密钥：00000000000000000000000000000000');
+                param2Input.value = '00000000000000000000000000000000';
+                return;
+            }
+            result = await dc_changekey_aes(handle,0xff,arg_value,16,key_value);
+            if ((typeof (result) === 'undefined') || (result[0] != 0) ) {
+                appendToOutput('dc_changekey_aes 写密钥失败 返回结果:'+ result[0]);
+                return;
+            }
+            appendToOutput('dc_changekey_aes 写密钥成功 返回结果:'+ result[0]);
+            return;
+        })
    
     </script>   
 </body>
